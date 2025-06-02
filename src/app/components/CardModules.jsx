@@ -1,16 +1,15 @@
 import Image from "next/image"
 
 
-function CardModules({ src, title, desc }) {
+function CardModules({ key, title, icon, sign }) {
     return (
-        <div className='flex flex-1 flex-col items-center justify-between gap-4 min-w-[340px] w-full lg:w-1/3 py-8 px-6 border-[0.5] border-primary-light-gray shadow-sm'>
-            <div className='flex items-center justify-center gap-2'>
-                <div className="border-[0.5] border-solid border-primary-light-gray rounded-full">
-                    <Image src="/profile1.png" alt='profile picture' height={40} width={40} />
+        <div key={key} className='flex flex-1 flex-col items-start justify-between gap-4 min-w-[240px] lg:max-w-1/4 w-full lg:w-1/4 py-4 px-6 rounded-sm border-[0.5] border-primary-light-gray shadow-sm hover:-translate-y-1 transform transition-all ease-in duration-200 cursor-pointer'>
+            <div className='flex items-center justify-center gap-4'>
+                <div className="border-[0.5] border-solid border-primary-light-gray rounded-full flex items-center justify-center p-2 text-2xl">
+                     {icon}
                 </div>
-                <h3 className='text-title text-lg font-medium'>{title}</h3>
+                <h3 className='text-title text-lg font-medium text-start'>{title}</h3>
             </div>
-            <p className='text-description'>{desc}</p>
         </div>
     )
 }

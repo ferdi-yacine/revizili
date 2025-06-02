@@ -9,9 +9,9 @@ const FeaturedSubjects = () => {
             <h1 className='text-title text-5xl font-semibold'>Featured Subjects</h1>
             <p className='text-description lg:w-1/2 self-center mt-6'>Explore a Diverse Curriculum Taught by Passionate Educators. From Core Academics to Specialized Courses, We Offer Personalized Guidance to Help You Succeed</p>
             <div className='flex flex-wrap items-stretch gap-4 mt-10'>
-                <CardFeaturedSubjects title="Jane Doe" desc="As a student, I was struggling with math until I found my perfect tutor on this platform. They helped me develop a deeper understanding and build the confidence." />
-                <CardFeaturedSubjects title="Emily Smith" desc="The tutors on this platform are truly exceptional. They tailored their approach to my learning style and provided the support I needed to conquer challenging subjects." />
-                <CardFeaturedSubjects title="Michael Johnson" desc="This tutoring platform has been a game-changer for me. The knowledgeable tutors and personalized curriculum have helped me overcome academic." />
+                <CardFeaturedSubjects src="/profile1.png" title="Jane Doe" desc="As a student, I was struggling with math until I found my perfect tutor on this platform. They helped me develop a deeper understanding and build the confidence." />
+                <CardFeaturedSubjects src="/profile2.jpg" title="Emily Smith" desc="The tutors on this platform are truly exceptional. They tailored their approach to my learning style and provided the support I needed to conquer challenging subjects." />
+                <CardFeaturedSubjects src="/profile3.jpg" title="Michael Johnson" desc="This tutoring platform has been a game-changer for me. The knowledgeable tutors and personalized curriculum have helped me overcome academic." />
             </div>
         </div>
     </div>

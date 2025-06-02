@@ -1,11 +1,10 @@
-import { CallMade } from "@mui/icons-material"
 import Link from "next/link"
 
 
 const Navbar = () => {
     return (
         <div className="flex items-center justify-center bg-primary-dark-gray w-full relative">
-            <div className="w-full max-w-7xl h-22 flex items-center justify-between py-8 px-16">
+            <div className="w-full max-w-7xl h-22 flex items-center justify-between py-8 px-7 lg:px-20">
                 <div className="">
                     <h1 className="text-2xl font-bold text-white">Revizili</h1>
                 </div>
@@ -30,7 +29,6 @@ const Navbar = () => {
                         </Link>
                     </div>
                 </div>
-
             </div>
         </div>
     )

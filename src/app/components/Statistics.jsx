@@ -1,5 +1,5 @@
 import Image from 'next/image'
-import React from 'react'
+
 
 const Statistics = () => {
     return (
@@ -14,10 +14,10 @@ const Statistics = () => {
                             <div className='w-1/4 flex items-center justify-center'>
                                 <div className='w-24 h-24 p-2 rounded-full bg-gray-200 flex items-center justify-center'>
                                     <Image
-                                        src="/student.png"
+                                        src="/files.png"
                                         alt="Student"
-                                        width={74}
-                                        height={74}
+                                        width={54}
+                                        height={54}
                                         className="object-contain"
                                     />
                                 </div>
