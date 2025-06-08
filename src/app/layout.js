@@ -1,15 +1,18 @@
+import AuthProvider from "./components/AuthProvider";
 import "./globals.css";
 
 export const metadata = {
   title: "Revizili",
-  description: "Platforme d'echange des informations fiscales",
+  description: "Platforme",
 };
 
 export default function RootLayout({ children }) {
   return (
     <html lang="en">
       <body>
-        {children}
+        <AuthProvider>
+          {children}
+        </AuthProvider>
       </body>
     </html>
   );

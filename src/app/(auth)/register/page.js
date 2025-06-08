@@ -1,18 +1,21 @@
 "use client"
 
 import { useState } from "react"
-import { useSearchParams, useRouter } from "next/navigation"
+import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { Button } from "@/app/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/app/components/ui/card"
 import { Input } from "@/app/components/ui/input"
 import { Label } from "@/app/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/app/components/ui/select"
-import { Textarea } from "@/app/components/ui/textarea"
 import { BookOpen } from "lucide-react"
+import '@ant-design/v5-patch-for-react-19';
+import { notification } from "antd"
+
 
 const RegisterPage = () => {
     const router = useRouter()
+    const [isLoading, setIsLoading] = useState(false)
     const [formData, setFormData] = useState({
         firstName: "",
         lastName: "",
@@ -20,23 +23,82 @@ const RegisterPage = () => {
         password: "",
         confirmPassword: "",
         phone: "",
+        year: "",
+        specialty: ""
     })
 
-    const handleSubmit = (e) => {
-        e.preventDefault()
-        // Simulate registration
-        console.log("Registration data:", { ...formData })
+    const [showSpecialtySelect, setShowSpecialtySelect] = useState(false)
 
-        // Redirect to payment page instead of dashboard
-        // router.push(`/payment`)
+    const years = [
+        { value: "1ere", label: "1st Preparatory Year" },
+        { value: "2eme", label: "2nd Preparatory Year" },
+        { value: "3eme", label: "1st Year Second Cycle" },
+        { value: "4eme", label: "2nd Year Second Cycle" },
+        { value: "5eme", label: "3rd Year Second Cycle" },
+    ]
+
+    const specialties = {
+        "4eme": [
+            { value: "financialMarket", label: "Financial Market and Financial Engineering" },
+            { value: "accountingAudit", label: "Accounting and Accounting Audit" },
+            { value: "corporateFinance", label: "Corporate Finance" },
+            { value: "banksInsurance", label: "Banks and Insurance" }
+        ],
+        "5eme": [
+            { value: "financialMarket", label: "Financial Market and Financial Engineering" },
+            { value: "accountingAudit", label: "Accounting and Accounting Audit" },
+            { value: "corporateFinance", label: "Corporate Finance" },
+            { value: "banksInsurance", label: "Banks and Insurance" }
+        ]
     }
+
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        try {
+            setIsLoading(true);
+            const response = await fetch("/api/auth/register", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(formData),
+            });
+
+            if (!response.ok) {
+                const err = await response.json();
+                throw new Error(err.error || 'Registration failed');
+            }
+
+            notification.success({
+                message: 'Success',
+                description: "Your account has been created successfully! Heading toward payment...",
+            });
+            setTimeout(() => {
+                router.push(`/payment`);
+            }, 2000)
+        } catch (err) {
+            console.log(err);
+            notification.error({
+                message: 'Error',
+                description: err.message || 'Something went wrong. Please try again.',
+            });
+        } finally {
+            setIsLoading(false);
+        }
+
+    };
 
     const handleInputChange = (field, value) => {
         setFormData((prev) => ({ ...prev, [field]: value }))
+
+        if (field === "year") {
+            setShowSpecialtySelect(value === "4eme" || value === "5eme")
+            if (value !== "4eme" && value !== "5eme") {
+                setFormData(prev => ({ ...prev, specialty: "" }))
+            }
+        }
     }
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-orange-50 to-orange-10 flex items-center justify-center p-4">
+        <div className="relative min-h-screen bg-gradient-to-br from-orange-50 to-orange-10 flex items-center justify-center p-4">
             <Card className="w-full max-w-md">
                 <CardHeader className="text-center">
                     <div className="flex justify-center mb-4">
@@ -90,6 +152,48 @@ const RegisterPage = () => {
                             />
                         </div>
 
+                        <div className="flex flex-col gap-2 w-full">
+                            <Label>Academic Year</Label>
+                            <Select
+                                value={formData.year}
+                                onValueChange={(value) => handleInputChange("year", value)}
+                                required
+                            >
+                                <SelectTrigger className="w-full">
+                                    <SelectValue placeholder="Select your year" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {years.map((year) => (
+                                        <SelectItem key={year.value} value={year.value}>
+                                            {year.label}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
+
+                        {showSpecialtySelect && (
+                            <div className="flex flex-col gap-2 w-full">
+                                <Label>Specialty</Label>
+                                <Select
+                                    value={formData.specialty}
+                                    onValueChange={(value) => handleInputChange("specialty", value)}
+                                    required
+                                >
+                                    <SelectTrigger className="w-full">
+                                        <SelectValue placeholder="Select your specialty" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {specialties[formData.year]?.map((specialty) => (
+                                            <SelectItem key={specialty.value} value={specialty.value}>
+                                                {specialty.label}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                        )}
+
                         <div className="flex flex-col gap-2">
                             <Label htmlFor="password">Password</Label>
                             <Input
@@ -111,7 +215,7 @@ const RegisterPage = () => {
                                 required
                             />
                         </div>
-                        <Button type="submit" className="w-full">
+                        <Button disabled={isLoading} type="submit" className="w-full">
                             Continue to Payment
                         </Button>
                     </form>

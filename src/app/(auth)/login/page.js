@@ -8,6 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/app
 import { Input } from "@/app/components/ui/input"
 import { Label } from "@/app/components/ui/label"
 import { BookOpen } from "lucide-react"
+import { signIn } from "next-auth/react"
 
 export default function LoginPage() {
   const router = useRouter()
@@ -17,9 +18,8 @@ export default function LoginPage() {
   })
 
   const handleSubmit = (e) => {
-    e.preventDefault()
     // Simulate login
-    console.log("Login data:", formData)
+    signIn("credentials", formData)
 
 
     //   router.push("/dashboard/admin")
@@ -34,10 +34,10 @@ export default function LoginPage() {
             <BookOpen className="h-12 w-12 text-secondary-medium-orange" />
           </div>
           <CardTitle className="text-2xl">Welcome Back</CardTitle>
-          <CardDescription>Sign in to your TutorConnect account</CardDescription>
+          <CardDescription>Sign in to your Revizili account</CardDescription>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form action={handleSubmit} className="space-y-4">
             <div className="flex flex-col gap-2">
               <Label htmlFor="email">Email</Label>
               <Input

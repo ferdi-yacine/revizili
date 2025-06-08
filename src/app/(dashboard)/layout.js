@@ -1,16 +1,19 @@
+import { auth } from "@/auth"
 import Sidebar from "../components/Sidebar"
 import { TopNav } from "../components/TopNav"
 
 
-export default function StudentLayout({ children }) {
-    const user = "tutor"
+const DashboardLayout = async ({ children }) => {
+    const { user } = await auth()
     return (
         <div className="flex h-screen bg-gray-50">
-            <Sidebar userType={user} />
+            <Sidebar userType={user?.role} />
             <div className="flex-1 flex flex-col overflow-hidden">
-                <TopNav userType="student" userName="John Doe" />
+                <TopNav userType={user?.role} userName="John Doe" />
                 <main className="flex-1 overflow-auto">{children}</main>
             </div>
         </div>
     )
 }
+
+export default DashboardLayout
