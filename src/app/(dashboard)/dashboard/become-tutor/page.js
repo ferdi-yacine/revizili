@@ -20,10 +20,9 @@ const BecomeTutorPage = () => {
     qualifications: "",
     experience: "",
     bio: "",
-    hourlyRate: "",
 
     // Modules
-    selectedModules: [],
+    selectedModule: [],
 
     // Documents
     resume: null ,
@@ -35,7 +34,6 @@ const BecomeTutorPage = () => {
 
     // Additional Info
     languages: [],
-    availability: [],
     termsAccepted: false,
   })
 

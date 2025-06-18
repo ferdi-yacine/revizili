@@ -1,3 +1,4 @@
+import Image from "next/image"
 import Link from "next/link"
 
 
@@ -5,8 +6,8 @@ const Navbar = () => {
     return (
         <div className="flex items-center justify-center bg-primary-dark-gray w-full relative">
             <div className="w-full max-w-7xl h-22 flex items-center justify-between py-8 px-7 lg:px-20">
-                <div className="">
-                    <h1 className="text-2xl font-bold text-white">Revizili</h1>
+                <div className="relative h-30 w-40">
+                    <Image src="/logo.png" alt="Revizili Logo" fill={true} className="object-center object-cover" />
                 </div>
                 <div className="flex items-center gap-8 relative">
                     <div className="hidden lg:flex items-center gap-8 text-primary-light-gray">
@@ -14,10 +15,10 @@ const Navbar = () => {
                             Home
                         </Link>
                         <Link className="text-lg hover:text-secondary-dark-orange" href="/store">
-                            Store
+                            Modules
                         </Link>
                         <Link className="text-lg hover:text-secondary-dark-orange" href="/a-propos">
-                            A propos
+                            About us
                         </Link>
                         <Link className="text-lg hover:text-secondary-dark-orange" href="/contact">
                             Contact

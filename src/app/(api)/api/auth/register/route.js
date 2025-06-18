@@ -10,7 +10,6 @@ export const POST = async (request) => {
 
     const user = await request.json();
     const { firstName, lastName, email, phone, password, year, speciality} = user;
-    console.log(user)
 
     await connectDB();
 

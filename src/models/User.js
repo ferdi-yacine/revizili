@@ -33,6 +33,11 @@ const userSchema = new mongoose.Schema({
     default: 'student',
     required: true,
   },
+  paimentStatus: {
+    type: String,
+    enum: ["paid", "not paid", "expaired"],
+    default: "not paid"
+  }
 }, { timestamps: true });
 
 export const User = mongoose.models.User || mongoose.model("User", userSchema);

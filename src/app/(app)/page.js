@@ -1,3 +1,4 @@
+import Banner from "../components/Banner";
 import Benefits from "../components/Benefits";
 import ButtonUp from "../components/ButtonUp";
 import FeaturedSubjects from "../components/FeaturedSubjects";
@@ -13,6 +14,7 @@ import Testimonials from "../components/Testimonials";
 export default function Home() {
     return (
         <div className="flex flex-col items-center justify-center overflow-x-hidden">
+            <Banner />
             <Navbar />
             <Landing />
             <FeaturedSubjects />

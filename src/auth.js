@@ -26,7 +26,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth(
 
                     await connectDB();
 
-                    const user = await User.findOne({ email }).select("+password +role");
+                    const user = await User.findOne({ email });
 
                     if (!user || !user.password) {
                         throw new Error("Invalid email or password!");
@@ -36,6 +36,14 @@ export const { handlers, signIn, signOut, auth } = NextAuth(
 
                     if (!isMatched) {
                         throw new Error("Wrong credentials!");
+                    }
+
+                    if (user.paimentStatus === "not paid") {
+                        throw new Error("Complete your paiment to get access to the platforme!");
+                    }
+
+                    if (user.paimentStatus === "expired") {
+                        throw new Error("Your paiment has been expired, repay to get access to the platforme!");
                     }
 
                     const userData = {
