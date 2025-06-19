@@ -9,7 +9,6 @@ const moduleSchema = new mongoose.Schema({
   sign: {
     type: String,
     required: true,
-    unique: true,
     uppercase: true,
     trim: true
   },

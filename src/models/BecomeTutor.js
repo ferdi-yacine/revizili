@@ -22,7 +22,7 @@ const becomeTutorSchema = new mongoose.Schema({
         required: true
     },
 
-    selectedModule: [{
+    selectedModules: [{
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Module',
         required: true
@@ -48,20 +48,6 @@ const becomeTutorSchema = new mongoose.Schema({
         enum: ['English', 'Spanish', 'French', 'German', 'Italian', 'Portuguese', 'Mandarin', 'Japanese', 'Korean', 'Arabic'],
         required: true
     }],
-    availability: [{
-        type: String,
-        enum: [
-            'Weekday Mornings',
-            'Weekday Afternoons',
-            'Weekday Evenings',
-            'Weekend Mornings',
-            'Weekend Afternoons',
-            'Weekend Evenings',
-            'Flexible Schedule'
-        ],
-        required: true
-    }],
-
     status: {
         type: String,
         enum: ['pending', 'approved', 'rejected'],

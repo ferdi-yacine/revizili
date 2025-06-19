@@ -1,10 +1,10 @@
-// app/api/tutor/process/route.js
-import { NextResponse } from 'next/server';
-import { connectDB } from '@/lib/connectDB';
-import { BecomeTutor } from '@/models/BecomeTutor';
-import { User } from '@/models/User';
-import { Student } from '@/models/Student';
-import { Tutor } from '@/models/Tutor';
+import connectDB from "@/lib/db";
+import { BecomeTutor } from "@/models/BecomeTutor";
+import { Student } from "@/models/Student";
+import { Tutor } from "@/models/Tutor";
+import { User } from "@/models/User";
+import { NextResponse } from "next/server";
+
 
 export const PUT = async (request) => {
   try {
@@ -33,12 +33,17 @@ export const PUT = async (request) => {
 
       await Student.findOneAndDelete({ userId: application.userId });
 
+      const updateObj = {
+        $setOnInsert: { userId: application.userId, students: [] }
+      };
+
+      if (application.selectedModules && Array.isArray(application.selectedModules)) {
+        updateObj.$addToSet = { modules: { $each: application.selectedModules } };
+      }
+
       const tutor = await Tutor.findOneAndUpdate(
         { userId: application.userId },
-        { 
-          $addToSet: { modules: { $each: application.selectedModule } },
-          $setOnInsert: { userId: application.userId, students: [] }
-        },
+        updateObj,
         { upsert: true, new: true }
       );
 

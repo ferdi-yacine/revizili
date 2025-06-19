@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { Button } from "@/app/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/app/components/ui/card"
 import { Input } from "@/app/components/ui/input"
@@ -12,24 +12,32 @@ import { Badge } from "@/app/components/ui/badge"
 import { Progress } from "@/app/components/ui/progress"
 import { Alert, AlertDescription } from "@/app/components/ui/alert"
 import { Upload, Video, BookOpen, User, FileText, CheckCircle, X } from "lucide-react"
+import { CldUploadButton } from "next-cloudinary"
+import { useSession } from "next-auth/react"
+import '@ant-design/v5-patch-for-react-19'
+import { notification } from "antd"
 
 const BecomeTutorPage = () => {
+  const { data: session } = useSession();
+  const userId = session?.user?.id;
   const [currentStep, setCurrentStep] = useState(1)
+  const [modules, setModules] = useState([])
+  const [loadingModules, setLoadingModules] = useState(true)
+  const [selectedYear, setSelectedYear] = useState('preparatoryYear1')
+  const [selectedSpecialty, setSelectedSpecialty] = useState(null)
   const [formData, setFormData] = useState({
-    // Personal Information
     qualifications: "",
     experience: "",
     bio: "",
 
-    // Modules
-    selectedModule: [],
+    selectedModules: [],
 
     // Documents
-    resume: null ,
+    resume: "",
     certificates: [],
 
     // Video Evidence
-    videoFile: null,
+    videoFile: "",
     videoDescription: "",
 
     // Additional Info
@@ -37,23 +45,28 @@ const BecomeTutorPage = () => {
     termsAccepted: false,
   })
 
-  const availableModules = [
-    "Mathematics",
-    "Physics",
-    "Chemistry",
-    "Biology",
-    "Computer Science",
-    "Statistics",
-    "Calculus",
-    "Algebra",
-    "Geometry",
-    "English Literature",
-    "History",
-    "Economics",
-    "Psychology",
-    "Philosophy",
-    "Foreign Languages",
+  const yearOptions = [
+    { id: 'preparatoryYear1', label: '1st year', displayName: '1st Preparatory Year' },
+    { id: 'preparatoryYear2', label: '2nd year', displayName: '2nd Preparatory Year' },
+    { id: 'secondCycleYear1', label: '3rd year', displayName: '1st Year Second Cycle' },
+    { id: 'secondCycleYear2', label: '4th year', displayName: '2nd Year Second Cycle' },
+    { id: 'secondCycleYear3', label: '5th year', displayName: '3rd Year Second Cycle' },
   ]
+
+  const specialtyOptions = {
+    secondCycleYear2: [
+      { id: 'financialMarket', name: 'Financial Market and Financial Engineering' },
+      { id: 'accountingAudit', name: 'Accounting and Accounting Audit' },
+      { id: 'corporateFinance', name: 'Corporate Finance' },
+      { id: 'banksInsurance', name: 'Banks and Insurance' }
+    ],
+    secondCycleYear3: [
+      { id: 'financialMarket', name: 'Financial Market and Financial Engineering' },
+      { id: 'accountingAudit', name: 'Accounting and Accounting Audit' },
+      { id: 'corporateFinance', name: 'Corporate Finance' },
+      { id: 'banksInsurance', name: 'Banks and Insurance' }
+    ]
+  }
 
   const availableLanguages = [
     "English",
@@ -68,22 +81,51 @@ const BecomeTutorPage = () => {
     "Arabic",
   ]
 
-  const availabilityOptions = [
-    "Weekday Mornings",
-    "Weekday Afternoons",
-    "Weekday Evenings",
-    "Weekend Mornings",
-    "Weekend Afternoons",
-    "Weekend Evenings",
-    "Flexible Schedule",
-  ]
+  useEffect(() => {
+    const fetchModules = async () => {
+      try {
+        setLoadingModules(true)
+        const response = await fetch('/api/module')
+        const data = await response.json()
+        setModules(data.modules)
+      } catch (error) {
+        console.error('Error fetching modules:', error)
+      } finally {
+        setLoadingModules(false)
+      }
+    }
 
-  const handleModuleToggle = (module) => {
+    fetchModules()
+  }, [])
+
+  const handleYearClick = (yearId) => {
+    setSelectedYear(yearId)
+    setSelectedSpecialty(null)
+  }
+
+  const handleSpecialtyClick = (specialtyId) => {
+    setSelectedSpecialty(specialtyId)
+  }
+
+  const getFilteredModules = () => {
+    if (loadingModules || !modules.length) return []
+
+    let filtered = modules.filter(module => module.academicLevel === selectedYear)
+
+    if (selectedSpecialty) {
+      filtered = filtered.filter(module => module.specialty === selectedSpecialty)
+    }
+
+    return filtered
+  }
+
+
+  const handleModuleToggle = (moduleId) => {
     setFormData((prev) => ({
       ...prev,
-      selectedModules: prev.selectedModules.includes(module)
-        ? prev.selectedModules.filter((m) => m !== module)
-        : [...prev.selectedModules, module],
+      selectedModules: prev.selectedModules.includes(moduleId)
+        ? prev.selectedModules.filter((id) => id !== moduleId)
+        : [...prev.selectedModules, moduleId],
     }))
   }
 
@@ -93,15 +135,6 @@ const BecomeTutorPage = () => {
       languages: prev.languages.includes(language)
         ? prev.languages.filter((l) => l !== language)
         : [...prev.languages, language],
-    }))
-  }
-
-  const handleAvailabilityToggle = (option) => {
-    setFormData((prev) => ({
-      ...prev,
-      availability: prev.availability.includes(option)
-        ? prev.availability.filter((a) => a !== option)
-        : [...prev.availability, option],
     }))
   }
 
@@ -128,10 +161,46 @@ const BecomeTutorPage = () => {
     }
   }
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     console.log("Submitting tutor application:", formData)
-    // Implement submission logic
-    alert("Application submitted successfully! We'll review it and get back to you within 3-5 business days.")
+    try {
+      // Prepare the data to send
+      const applicationData = {
+        userId,
+        ...formData
+      };
+
+      // Make the POST request
+      const response = await fetch('/api/tutor/applications', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(applicationData),
+      });
+
+      if (!response.ok) {
+        const err = await response.json();
+        throw new Error(err.error || 'Registration failed');
+      }
+
+      const result = await response.json();
+
+      notification.success({
+        message: 'Success',
+        description: "Application submitted successfully! We'll review it and get back to you within 3-5 business days.",
+      });
+      setTimeout(() => {
+        router.push(`/dashboard`);
+      }, 2000)
+
+    } catch (err) {
+      console.error("Error submitting application:", err);
+      notification.error({
+        message: 'Error',
+        description: err.message || 'Something went wrong. Please try again.',
+      });
+    }
   }
 
   const nextStep = () => {
@@ -145,13 +214,13 @@ const BecomeTutorPage = () => {
   const isStepValid = () => {
     switch (currentStep) {
       case 1:
-        return formData.qualifications && formData.experience && formData.bio && formData.hourlyRate
+        return formData.qualifications && formData.experience && formData.bio
       case 2:
         return formData.selectedModules.length > 0
       case 3:
         return formData.resume && formData.videoFile && formData.videoDescription
       case 4:
-        return formData.languages.length > 0 && formData.availability.length > 0 && formData.termsAccepted
+        return formData.languages.length > 0 && formData.termsAccepted
       default:
         return false
     }
@@ -233,18 +302,6 @@ const BecomeTutorPage = () => {
                 onChange={(e) => setFormData((prev) => ({ ...prev, bio: e.target.value }))}
               />
             </div>
-
-            <div>
-              <Label htmlFor="hourlyRate">Hourly Rate (USD)</Label>
-              <Input
-                id="hourlyRate"
-                type="number"
-                placeholder="45"
-                value={formData.hourlyRate}
-                onChange={(e) => setFormData((prev) => ({ ...prev, hourlyRate: e.target.value }))}
-              />
-              <p className="text-sm text-gray-500 mt-1">You can adjust this later for different modules</p>
-            </div>
           </CardContent>
         </Card>
       )}
@@ -259,46 +316,94 @@ const BecomeTutorPage = () => {
             </CardTitle>
             <CardDescription>Select the subjects you want to teach (you can add more later)</CardDescription>
           </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-              {availableModules.map((module) => (
-                <div
-                  key={module}
-                  className={`p-3 border rounded-lg cursor-pointer transition-colors ${
-                    formData.selectedModules.includes(module)
-                      ? "border-blue-500 bg-blue-50"
-                      : "border-gray-200 hover:border-gray-300"
-                  }`}
-                  onClick={() => handleModuleToggle(module)}
+          <CardContent className="space-y-6">
+            {/* Year selection */}
+            <div className="flex flex-wrap gap-2">
+              {yearOptions.map((option) => (
+                <Button
+                  key={option.id}
+                  variant={selectedYear === option.id ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => handleYearClick(option.id)}
                 >
-                  <div className="flex items-center space-x-2">
-                    <Checkbox
-                      checked={formData.selectedModules.includes(module)}
-                      onChange={() => handleModuleToggle(module)}
-                    />
-                    <span className="text-sm font-medium">{module}</span>
-                  </div>
-                </div>
+                  {option.label}
+                </Button>
               ))}
             </div>
 
+            {/* Specialty selection (only for years 4 and 5) */}
+            {(selectedYear === 'secondCycleYear2' || selectedYear === 'secondCycleYear3') && (
+              <div className="flex flex-wrap gap-2">
+                {specialtyOptions[selectedYear].map((specialty) => (
+                  <Button
+                    key={specialty.id}
+                    variant={selectedSpecialty === specialty.id ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => handleSpecialtyClick(specialty.id)}
+                  >
+                    {specialty.name}
+                  </Button>
+                ))}
+              </div>
+            )}
+
+            {/* Modules list */}
+            {loadingModules ? (
+              <div className="flex justify-center py-8">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-400"></div>
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                {getFilteredModules().map((module) => (
+                  <div
+                    key={module._id}
+                    className={`p-3 border rounded-lg cursor-pointer transition-colors ${formData.selectedModules.includes(module._id)
+                      ? "border-blue-500 bg-blue-50"
+                      : "border-gray-200 hover:border-gray-300"
+                      }`}
+                    onClick={() => handleModuleToggle(module._id)}
+                  >
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        checked={formData.selectedModules.includes(module._id)}
+                        onChange={() => handleModuleToggle(module._id)}
+                      />
+                      <span className="text-sm font-medium">
+                        {module.name}
+                        <span className="text-xs text-gray-500 ml-1">({module.sign})</span>
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Selected modules display */}
             {formData.selectedModules.length > 0 && (
               <div className="mt-6">
                 <h4 className="font-medium mb-3">Selected Modules ({formData.selectedModules.length})</h4>
                 <div className="flex flex-wrap gap-2">
-                  {formData.selectedModules.map((module) => (
-                    <Badge key={module} variant="secondary" className="flex items-center gap-1">
-                      {module}
-                      <X className="h-3 w-3 cursor-pointer" onClick={() => handleModuleToggle(module)} />
-                    </Badge>
-                  ))}
+                  {formData.selectedModules.map(moduleId => {
+                    const module = modules.find(m => m._id === moduleId)
+                    return module ? (
+                      <Badge key={moduleId} variant="secondary" className="flex items-center gap-1">
+                        {module.name}
+                        <X
+                          className="h-3 w-3 cursor-pointer"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            handleModuleToggle(moduleId)
+                          }}
+                        />
+                      </Badge>
+                    ) : null
+                  })}
                 </div>
               </div>
             )}
           </CardContent>
         </Card>
       )}
-
       {/* Step 3: Documents and Video */}
       {currentStep === 3 && (
         <div className="space-y-6">
@@ -317,29 +422,22 @@ const BecomeTutorPage = () => {
                   <Upload className="h-12 w-12 text-gray-400 mx-auto mb-4" />
                   <p className="text-gray-600 mb-2">Click to upload your resume</p>
                   <p className="text-sm text-gray-500">PDF, DOC, or DOCX (max 10MB)</p>
-                  <input
-                    type="file"
-                    accept=".pdf,.doc,.docx"
-                    onChange={(e) => e.target.files?.[0] && handleFileUpload(e.target.files[0], "resume")}
-                    className="hidden"
-                    id="resume-upload"
-                  />
-                  <Button
-                    variant="outline"
-                    className="mt-4"
-                    onClick={() => document.getElementById("resume-upload")?.click()}
+                  <CldUploadButton
+                    uploadPreset="revizili"
+                    onSuccess={(result) => { handleFileUpload(result?.info?.secure_url, "resume") }}
                   >
-                    Choose File
-                  </Button>
+                    <Button
+                      variant="outline"
+                      className="mt-4"
+                    >
+                      Choose File
+                    </Button>
+                  </CldUploadButton>
                 </div>
               ) : (
                 <div className="flex items-center justify-between p-4 border rounded-lg">
                   <div className="flex items-center space-x-3">
                     <FileText className="h-8 w-8 text-blue-600" />
-                    <div>
-                      <p className="font-medium">{formData.resume.name}</p>
-                      <p className="text-sm text-gray-500">{(formData.resume.size / 1024 / 1024).toFixed(2)} MB</p>
-                    </div>
                   </div>
                   <Button variant="ghost" size="sm" onClick={() => removeFile("resume")}>
                     <X className="h-4 w-4" />
@@ -357,7 +455,7 @@ const BecomeTutorPage = () => {
                 Teaching Video
               </CardTitle>
               <CardDescription>
-                Record a 3-5 minute video explaining one of your selected modules. This helps us assess your teaching
+                Record a 15-20 minute video explaining one of your selected modules. This helps us assess your teaching
                 ability.
               </CardDescription>
             </CardHeader>
@@ -367,29 +465,22 @@ const BecomeTutorPage = () => {
                   <Video className="h-12 w-12 text-gray-400 mx-auto mb-4" />
                   <p className="text-gray-600 mb-2">Upload your teaching video</p>
                   <p className="text-sm text-gray-500">MP4, MOV, or AVI (max 100MB)</p>
-                  <input
-                    type="file"
-                    accept=".mp4,.mov,.avi"
-                    onChange={(e) => e.target.files?.[0] && handleFileUpload(e.target.files[0], "video")}
-                    className="hidden"
-                    id="video-upload"
-                  />
-                  <Button
-                    variant="outline"
-                    className="mt-4"
-                    onClick={() => document.getElementById("video-upload")?.click()}
+                  <CldUploadButton
+                    uploadPreset="revizili"
+                    onSuccess={(result) => { handleFileUpload(result?.info?.secure_url, "video") }}
                   >
-                    Choose Video
-                  </Button>
+                    <Button
+                      variant="outline"
+                      className="mt-4"
+                    >
+                      Choose Video
+                    </Button>
+                  </CldUploadButton>
                 </div>
               ) : (
                 <div className="flex items-center justify-between p-4 border rounded-lg">
                   <div className="flex items-center space-x-3">
                     <Video className="h-8 w-8 text-blue-600" />
-                    <div>
-                      <p className="font-medium">{formData.videoFile.name}</p>
-                      <p className="text-sm text-gray-500">{(formData.videoFile.size / 1024 / 1024).toFixed(2)} MB</p>
-                    </div>
                   </div>
                   <Button variant="ghost" size="sm" onClick={() => removeFile("video")}>
                     <X className="h-4 w-4" />
@@ -437,11 +528,10 @@ const BecomeTutorPage = () => {
                 {availableLanguages.map((language) => (
                   <div
                     key={language}
-                    className={`p-2 border rounded cursor-pointer transition-colors ${
-                      formData.languages.includes(language)
-                        ? "border-blue-500 bg-blue-50"
-                        : "border-gray-200 hover:border-gray-300"
-                    }`}
+                    className={`p-2 border rounded cursor-pointer transition-colors ${formData.languages.includes(language)
+                      ? "border-blue-500 bg-blue-50"
+                      : "border-gray-200 hover:border-gray-300"
+                      }`}
                     onClick={() => handleLanguageToggle(language)}
                   >
                     <div className="flex items-center space-x-2">
@@ -455,33 +545,6 @@ const BecomeTutorPage = () => {
                 ))}
               </div>
             </div>
-
-            {/* Availability */}
-            <div>
-              <Label>Preferred Teaching Times</Label>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-2">
-                {availabilityOptions.map((option) => (
-                  <div
-                    key={option}
-                    className={`p-3 border rounded cursor-pointer transition-colors ${
-                      formData.availability.includes(option)
-                        ? "border-blue-500 bg-blue-50"
-                        : "border-gray-200 hover:border-gray-300"
-                    }`}
-                    onClick={() => handleAvailabilityToggle(option)}
-                  >
-                    <div className="flex items-center space-x-2">
-                      <Checkbox
-                        checked={formData.availability.includes(option)}
-                        onChange={() => handleAvailabilityToggle(option)}
-                      />
-                      <span className="text-sm">{option}</span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
             {/* Terms and Conditions */}
             <div className="flex items-start space-x-2">
               <Checkbox

@@ -1,30 +1,30 @@
-// app/api/tutor/become/route.js
-import { NextResponse } from 'next/server';
-import { connectDB } from '@/lib/connectDB';
-import { BecomeTutor } from '@/models/BecomeTutor';
-import { User } from '@/models/User';
+import connectDB from "@/lib/db";
+import { BecomeTutor } from "@/models/BecomeTutor";
+import { NextResponse } from "next/server";
+
 
 export const POST = async (request) => {
   try {
     const body = await request.json();
-    
+    console.log(body)
     const {
       qualifications,
       experience,
       bio,
-      selectedModule,
+      selectedModules,
       resume,
       certificates,
       videoFile,
       videoDescription,
       languages,
-      availability,
       termsAccepted,
       userId
     } = body;
 
-    if (!qualifications || !experience || !bio || !selectedModule || !videoFile || 
-        !videoDescription || !languages || !availability || !termsAccepted || !userId) {
+
+
+    if (!qualifications || !experience || !bio || !selectedModules || !videoFile || 
+        !videoDescription || !languages || !termsAccepted || !userId) {
       return NextResponse.json(
         { error: "Missing required fields." },
         { status: 400 }
@@ -50,13 +50,12 @@ export const POST = async (request) => {
       qualifications,
       experience,
       bio,
-      selectedModule,
+      selectedModules,
       resume,
       certificates,
       videoFile,
       videoDescription,
       languages,
-      availability,
       termsAccepted
     });
 
