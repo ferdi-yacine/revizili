@@ -30,16 +30,6 @@ const reviewSchema = new mongoose.Schema({
   feedback: {
     type: String
   },
-  anonymous: {
-    type: Boolean,
-    default: false
-  },
-  response: {
-    type: String
-  },
-  responseDate: {
-    type: Date
-  }
 }, { timestamps: true });
 
 export const Review = mongoose.models.Review || mongoose.model("Review", reviewSchema);

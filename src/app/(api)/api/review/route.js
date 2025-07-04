@@ -1,8 +1,10 @@
-import { NextResponse } from 'next/server';
-import { connectDB } from '@/lib/connectDB';
-import { Review } from '@/models/Review';
-import { Session } from '@/models/Session';
-import { Notification } from '@/models/Notification';
+import connectDB from "@/lib/db";
+import { Notification } from "@/models/Notification";
+import { Review } from "@/models/Review";
+import { Session } from "@/models/Session";
+import { Module } from "@/models/Module";
+import { NextResponse } from "next/server";
+
 
 export const POST = async (request) => {
   try {
@@ -15,7 +17,6 @@ export const POST = async (request) => {
       moduleId,
       rating,
       feedback,
-      anonymous
     } = body;
 
     if (!sessionId || !studentId || !tutorId || !moduleId || !rating) {
@@ -50,7 +51,6 @@ export const POST = async (request) => {
       moduleId,
       rating,
       feedback,
-      anonymous
     });
 
     await newReview.save();
@@ -84,7 +84,6 @@ export const GET = async (request) => {
     const tutorId = searchParams.get('tutorId');
     const studentId = searchParams.get('studentId');
     const moduleId = searchParams.get('moduleId');
-    const limit = searchParams.get('limit') || 10;
 
     if (!tutorId && !studentId) {
       return NextResponse.json(
@@ -106,7 +105,6 @@ export const GET = async (request) => {
       .populate('moduleId', 'name sign')
       .populate('sessionId', 'startTime')
       .sort({ createdAt: -1 })
-      .limit(parseInt(limit));
 
     return NextResponse.json(
       { reviews },
