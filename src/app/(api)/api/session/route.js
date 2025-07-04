@@ -1,25 +1,26 @@
-import { NextResponse } from 'next/server';
-import { connectDB } from '@/lib/connectDB';
-import { Session } from '@/models/Session';
-import { Notification } from '@/models/Notification';
+import connectDB from "@/lib/db";
+import { Notification } from "@/models/Notification";
+import { Session } from "@/models/Session";
+import { Module } from "@/models/Module";
+import { NextResponse } from "next/server";
+
 
 export const POST = async (request) => {
   try {
     const body = await request.json();
-    
+
     const {
       studentId,
       tutorId,
       moduleId,
       startTime,
       endTime,
-      duration,
+      date,
       meetingLink,
-      notes,
-      cost
+      notes
     } = body;
 
-    if (!studentId || !tutorId || !moduleId || !startTime || !endTime || !duration || !cost) {
+    if (!studentId || !tutorId || !moduleId || !startTime || !endTime || !date) {
       return NextResponse.json(
         { error: "Missing required fields." },
         { status: 400 }
@@ -34,10 +35,9 @@ export const POST = async (request) => {
       moduleId,
       startTime,
       endTime,
-      duration,
+      date,
       meetingLink,
-      notes,
-      cost
+      notes
     });
 
     await newSession.save();
@@ -67,54 +67,61 @@ export const POST = async (request) => {
 
 export const GET = async (request) => {
   try {
-    const { searchParams } = new URL(request.url);
-    const userId = searchParams.get('userId');
-    const role = searchParams.get('role'); 
-    const status = searchParams.get('status');
-    const limit = searchParams.get('limit') || 10;
+    const { searchParams } = new URL(request.url)
+    const userId = searchParams.get('userId')
+    const role = searchParams.get('role')
+    const startDate = searchParams.get('startDate')
+    const endDate = searchParams.get('endDate')
+    const status = searchParams.get('status')
 
     if (!userId || !role) {
       return NextResponse.json(
         { error: "Missing userId or role parameter" },
         { status: 400 }
-      );
+      )
     }
 
-    await connectDB();
+    await connectDB()
 
-    const filter = {};
+    const filter = {}
     if (role === 'student') {
-      filter.studentId = userId;
+      filter.studentId = userId
     } else if (role === 'tutor') {
-      filter.tutorId = userId;
+      filter.tutorId = userId
     } else {
       return NextResponse.json(
         { error: "Invalid role parameter" },
         { status: 400 }
-      );
+      )
+    }
+
+    if (startDate && endDate) {
+      filter.date = {
+        $gte: new Date(startDate),
+        $lte: new Date(endDate)
+      }
     }
 
     if (status) {
-      filter.status = status;
+      filter.status = status
     }
 
     const sessions = await Session.find(filter)
-      .populate('studentId', 'name email')
-      .populate('tutorId', 'name email')
+      .populate('studentId', 'name email firstName lastName')
+      .populate('tutorId', 'name email firstName lastName')
       .populate('moduleId', 'name sign')
-      .sort({ startTime: -1 })
-      .limit(parseInt(limit));
+      .sort({ date: 1, startTime: 1 }) 
 
     return NextResponse.json(
       { sessions },
       { status: 200 }
-    );
+    )
 
   } catch (error) {
-    console.error("Error fetching sessions:", error);
+    console.error("Error fetching sessions:", error)
     return NextResponse.json(
       { error: "Internal Server Error" },
       { status: 500 }
-    );
+    )
   }
 }

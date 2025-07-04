@@ -1,73 +1,102 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/app/components/ui/button"
 import { Card, CardContent } from "@/app/components/ui/card"
 import { Badge } from "@/app/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/app/components/ui/avatar"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/app/components/ui/tabs"
-import { Calendar, Clock, Video, MessageCircle } from "lucide-react"
+import { Calendar, Clock, Video, MessageCircle, Loader2 } from "lucide-react"
+import { useSession } from "next-auth/react"
 
 const BookingsPage = () => {
-  const [upcomingBookings] = useState([
-    {
-      id: 1,
-      tutor: {
-        name: "Dr. Sarah Johnson",
-        avatar: "/placeholder.svg?height=40&width=40",
-        subject: "Mathematics",
-      },
-      date: "2024-01-15",
-      time: "2:00 PM - 3:00 PM",
-      duration: "1 hour",
-      meetingLink: "https://meet.google.com/abc-defg-hij",
-      status: "confirmed",
-      notes: "Focus on calculus derivatives",
-    },
-    {
-      id: 2,
-      tutor: {
-        name: "Prof. Michael Chen",
-        avatar: "/placeholder.svg?height=40&width=40",
-        subject: "Physics",
-      },
-      date: "2024-01-16",
-      time: "4:00 PM - 5:30 PM",
-      duration: "1.5 hours",
-      meetingLink: "https://meet.google.com/xyz-uvwx-yz",
-      status: "confirmed",
-      notes: "Quantum mechanics review",
-    },
-  ])
+  const { data: session } = useSession()
+  const [upcomingBookings, setUpcomingBookings] = useState([])
+  const [pendingBookings, setPendingBookings] = useState([])
+  const [isLoading, setIsLoading] = useState(true)
 
-  const [pendingBookings] = useState([
-    {
-      id: 3,
-      tutor: {
-        name: "Dr. Emily Rodriguez",
-        avatar: "/placeholder.svg?height=40&width=40",
-        subject: "Chemistry",
-      },
-      date: "2024-01-18",
-      time: "3:00 PM - 4:00 PM",
-      duration: "1 hour",
-      status: "pending",
-      notes: "Organic chemistry basics",
-    },
-  ])
+  useEffect(() => {
+    const fetchBookings = async () => {
+      if (!session?.user?.id) return
+
+      try {
+        setIsLoading(true)
+        // Fetch all sessions for this student
+        const response = await fetch(`/api/session?userId=${session.user.id}&role=student`)
+        const data = await response.json()
+
+        if (response.ok) {
+          const today = new Date()
+
+          // Filter upcoming sessions (accepted and date is today or future)
+          const upcoming = data.sessions.filter(session =>
+            session.status === 'accepted' &&
+            new Date(session.date) >= new Date(today.setHours(0, 0, 0, 0))
+          )
+
+          // Filter pending sessions (scheduled status)
+          const pending = data.sessions.filter(session =>
+            session.status === 'scheduled'
+          )
+
+          setUpcomingBookings(upcoming)
+          setPendingBookings(pending)
+        } else {
+          console.error('Error fetching sessions:', data.error)
+        }
+      } catch (error) {
+        console.error('Error fetching sessions:', error)
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    fetchBookings()
+  }, [session])
 
   const joinMeeting = (meetingLink) => {
     window.open(meetingLink, "_blank")
   }
 
-  const cancelBooking = (bookingId) => {
-    console.log("Canceling booking:", bookingId)
-    // Implement cancellation logic
+  const cancelBooking = async (bookingId) => {
+    try {
+      const response = await fetch(`/api/session/${bookingId}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          status: 'cancelled'
+        })
+      })
+
+      if (response.ok) {
+        // Update local state to remove the cancelled booking
+        setUpcomingBookings(prev => prev.filter(b => b._id !== bookingId))
+        setPendingBookings(prev => prev.filter(b => b._id !== bookingId))
+      } else {
+        console.error('Error cancelling booking')
+      }
+    } catch (error) {
+      console.error('Error cancelling booking:', error)
+    }
   }
 
   const rescheduleBooking = (bookingId) => {
     console.log("Rescheduling booking:", bookingId)
     // Implement rescheduling logic
+  }
+
+  const calculateDuration = (startTime, endTime) => {
+    return `${endTime.split(':')[0] - startTime.split(':')[0]} hours`;
+  }
+
+  if (isLoading) {
+    return (
+      <div className="p-6 flex justify-center items-center h-64">
+        <Loader2 className="h-8 w-8 animate-spin" />
+      </div>
+    )
   }
 
   return (
@@ -94,41 +123,43 @@ const BookingsPage = () => {
             </Card>
           ) : (
             upcomingBookings.map((booking) => (
-              <Card key={booking.id}>
+              <Card key={booking._id}>
                 <CardContent className="p-6">
                   <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center space-y-4 lg:space-y-0">
                     <div className="flex items-start space-x-4 flex-1">
                       <Avatar className="h-12 w-12">
-                        <AvatarImage src={booking.tutor.avatar || "/placeholder.svg"} alt={booking.tutor.name} />
+                        <AvatarImage src={booking.tutorId?.avatar || "/placeholder.svg"} alt={booking.tutorId?.name} />
                         <AvatarFallback>
-                          {booking.tutor.name
-                            .split(" ")
-                            .map((n) => n[0])
-                            .join("")}
+                          {booking.tutorId?.firstName
+                                ?.split(" ")
+                                .map((n) => n[0])
+                                .join("")}
                         </AvatarFallback>
                       </Avatar>
                       <div className="flex-1">
-                        <h3 className="text-lg font-semibold mb-1">{booking.tutor.subject}</h3>
-                        <p className="text-gray-600 mb-2">with {booking.tutor.name}</p>
+                        <h3 className="text-lg font-semibold mb-1">Module: {booking.moduleId?.name}</h3>
+                        <p className="text-gray-600 mb-2">with {booking.tutorId?.firstName} {booking.tutorId?.lastName}</p>
                         <div className="flex flex-wrap items-center gap-4 text-sm text-gray-600">
                           <div className="flex items-center">
                             <Calendar className="h-4 w-4 mr-1" />
-                            {booking.date}
+                            {new Date(booking.date).toLocaleDateString()}
                           </div>
                           <div className="flex items-center">
                             <Clock className="h-4 w-4 mr-1" />
-                            {booking.time}
+                            {booking.startTime} - {booking.endTime}
                           </div>
-                          <Badge variant="outline">{booking.duration}</Badge>
+                          <Badge variant="outline">
+                            {calculateDuration(booking.startTime, booking.endTime)}
+                          </Badge>
                           <Badge variant="secondary" className="bg-green-100 text-green-800">
                             {booking.status}
                           </Badge>
                         </div>
-                        {booking.notes && (
+                        {booking.responseMessage && (
                           <div className="mt-2">
                             <p className="text-sm text-gray-700">
                               <MessageCircle className="h-4 w-4 inline mr-1" />
-                              {booking.notes}
+                              {booking.responseMessage}
                             </p>
                           </div>
                         )}
@@ -136,15 +167,17 @@ const BookingsPage = () => {
                     </div>
 
                     <div className="flex flex-col space-y-2 lg:w-48">
-                      <Button onClick={() => joinMeeting(booking.meetingLink)} className="flex items-center">
-                        <Video className="h-4 w-4 mr-2" />
-                        Join Meeting
-                      </Button>
+                      {booking.meetingLink && (
+                        <Button onClick={() => joinMeeting(booking.meetingLink)} className="flex items-center">
+                          <Video className="h-4 w-4 mr-2" />
+                          Join Meeting
+                        </Button>
+                      )}
                       <div className="flex space-x-2">
-                        <Button variant="outline" size="sm" onClick={() => rescheduleBooking(booking.id)}>
+                        <Button variant="outline" size="sm" onClick={() => rescheduleBooking(booking._id)}>
                           Reschedule
                         </Button>
-                        <Button variant="outline" size="sm" onClick={() => cancelBooking(booking.id)}>
+                        <Button variant="outline" size="sm" onClick={() => cancelBooking(booking._id)}>
                           Cancel
                         </Button>
                       </div>
@@ -167,32 +200,31 @@ const BookingsPage = () => {
             </Card>
           ) : (
             pendingBookings.map((booking) => (
-              <Card key={booking.id}>
+              <Card key={booking._id}>
                 <CardContent className="p-6">
                   <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center space-y-4 lg:space-y-0">
                     <div className="flex items-start space-x-4 flex-1">
                       <Avatar className="h-12 w-12">
-                        <AvatarImage src={booking.tutor.avatar || "/placeholder.svg"} alt={booking.tutor.name} />
+                        <AvatarImage src={booking.tutorId?.avatar || "/placeholder.svg"} alt={booking.tutorId?.name} />
                         <AvatarFallback>
-                          {booking.tutor.name
-                            .split(" ")
-                            .map((n) => n[0])
-                            .join("")}
+                          {booking.tutorId?.firstName?.[0]}{booking.tutorId?.lastName?.[0]}
                         </AvatarFallback>
                       </Avatar>
                       <div className="flex-1">
-                        <h3 className="text-lg font-semibold mb-1">{booking.tutor.subject}</h3>
-                        <p className="text-gray-600 mb-2">with {booking.tutor.name}</p>
+                        <h3 className="text-lg font-semibold mb-1">Module: {booking.moduleId?.name}</h3>
+                        <p className="text-gray-600 mb-2">with {booking.tutorId?.firstName} {booking.tutorId?.lastName}</p>
                         <div className="flex flex-wrap items-center gap-4 text-sm text-gray-600">
                           <div className="flex items-center">
                             <Calendar className="h-4 w-4 mr-1" />
-                            {booking.date}
+                            {new Date(booking.date).toLocaleDateString()}
                           </div>
                           <div className="flex items-center">
                             <Clock className="h-4 w-4 mr-1" />
-                            {booking.time}
+                            {booking.startTime} - {booking.endTime}
                           </div>
-                          <Badge variant="outline">{booking.duration}</Badge>
+                          <Badge variant="outline">
+                            {calculateDuration(booking.startTime, booking.endTime)}
+                          </Badge>
                           <Badge variant="secondary" className="bg-yellow-100 text-yellow-800">
                             {booking.status}
                           </Badge>
@@ -209,7 +241,7 @@ const BookingsPage = () => {
                     </div>
 
                     <div className="flex space-x-2">
-                      <Button variant="outline" size="sm" onClick={() => cancelBooking(booking.id)}>
+                      <Button variant="outline" size="sm" onClick={() => cancelBooking(booking._id)}>
                         Cancel Request
                       </Button>
                     </div>

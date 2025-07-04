@@ -24,8 +24,8 @@ export default function PaymentPage() {
     // Pricing plans
     const plans = {
         student: {
-            price: 2000,
-            originalPrice: 3000,
+            price: 200,
+            originalPrice: 300,
             savings: "Save 33%",
             features: [
                 "All monthly features",
@@ -47,7 +47,7 @@ export default function PaymentPage() {
         const res = await fetch("/api/chargily-invoice", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ userId, amount: 2000 }),
+            body: JSON.stringify({ userId, amount: 200 }),
         })
 
         const data = await res.json()
@@ -102,9 +102,9 @@ export default function PaymentPage() {
                                                     <div className="text-right">
                                                         <div className="flex items-center space-x-2">
                                                             <span className="text-sm text-gray-500 line-through">
-                                                                3000DA
+                                                                300DA
                                                             </span>
-                                                            <span className="text-3xl font-bold text-blue-600">2000DA</span>
+                                                            <span className="text-3xl font-bold text-blue-600">200DA</span>
                                                         </div>
                                                         <p className="text-sm text-gray-600">per year</p>
                                                     </div>

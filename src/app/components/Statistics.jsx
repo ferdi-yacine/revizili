@@ -1,3 +1,4 @@
+import { Clock, Leaf, Pill, Timer } from 'lucide-react'
 import Image from 'next/image'
 
 
@@ -8,68 +9,9 @@ const Statistics = () => {
                 <h3 className='text-secondary-medium-orange text-lg font-semibold'>Trusted by Students and Tutors</h3>
                 <h1 className='text-title text-5xl font-semibold'>Impressive Statistics</h1>
                 <p className='text-description lg:w-1/2 self-center mt-6'>Our tutoring platform has empowered thousands of students and tutors to achieve their academic and professional goals</p>
-                <div className='flex items-start justify-between gap-4 p-4 mt-12'>
+                <div className='flex items-center justify-center gap-4 p-4 mt-12'>
                     <div className='w-1/2 flex flex-col items-start gap-4 p-2 border-[0.5] border-solid border-primary-light-gray rounded-sm'>
-                        <div className='flex items-center justify-between gap-2 p-4'>
-                            <div className='w-1/4 flex items-center justify-center'>
-                                <div className='w-24 h-24 p-2 rounded-full bg-gray-200 flex items-center justify-center'>
-                                    <Image
-                                        src="/files.png"
-                                        alt="Student"
-                                        width={54}
-                                        height={54}
-                                        className="object-contain"
-                                    />
-                                </div>
-                            </div>
-                            <div className='w-3/4 flex flex-col items-start gap-2'>
-                                <h3 className='text-title text-lg font-medium'>Apple TV</h3>
-                                <p className='text-description text-left'>
-                                    Discover the convenience and flexibility of our online tutoring platform. Connect with experienced educators and build the skills you.
-                                </p>
-                            </div>
-                        </div>
-                        <div className='flex items-center justify-between gap-2 p-4'>
-                            <div className='w-1/4 flex items-center justify-center'>
-                                <div className='w-24 h-24 p-2 rounded-full bg-gray-200 flex items-center justify-center'>
-                                    <Image
-                                        src="/google.png"
-                                        alt="Google"
-                                        width={74}
-                                        height={74}
-                                        className="object-contain"
-                                    />
-                                </div>
-                            </div>
-                            <div className='w-3/4 flex flex-col items-start gap-2'>
-                                <h3 className='text-title text-lg font-medium'>Goole</h3>
-                                <p className='text-description text-left'>
-                                    Elevate your learning journey with our expert tutors. Whether you're seeking support in a specific subject or want to explore new academic horizons.
-                                </p>
-                            </div>
-                        </div>
-                    </div>
-                    <div className='w-1/2 flex flex-col items-start gap-4 p-2 border-[0.5] border-solid border-primary-light-gray rounded-sm'>
-                        <div className='flex items-center justify-between gap-2 p-4'>
-                            <div className='w-1/4 flex items-center justify-center'>
-                                <div className='w-24 h-24 p-2 rounded-full bg-gray-200 flex items-center justify-center'>
-                                    <Image
-                                        src="/student.png"
-                                        alt="Student"
-                                        width={74}
-                                        height={74}
-                                        className="object-contain"
-                                    />
-                                </div>
-                            </div>
-                            <div className='w-3/4 flex flex-col items-start gap-2'>
-                                <h3 className='text-title text-lg font-medium'>Student</h3>
-                                <p className='text-description text-left'>
-                                    Experience the transformative power of one-on-one tutoring. Our platform connects you with knowledgeable tutors.
-                                </p>
-                            </div>
-                        </div>
-                        <div className='flex items-center justify-between gap-2 p-4 lg:mb-4'>
+                        <div className='flex flex-col items-center text-center gap-2 p-4 lg:mb-4'>
                             <div className='w-1/4 flex items-center justify-center'>
                                 <div className='w-24 h-24 p-2 rounded-full bg-gray-200 flex items-center justify-center'>
                                     <Image
@@ -81,11 +23,25 @@ const Statistics = () => {
                                     />
                                 </div>
                             </div>
-                            <div className='w-3/4 flex flex-col items-start gap-2'>
-                                <h3 className='text-title text-lg font-medium'>Tutor</h3>
-                                <p className='text-description text-left'>
-                                    This tutoring platform has been a game-changer for me. The knowledgeable tutors and personalized curriculum have helped me overcome academic obstacles.
+                            <div className='w-3/4 flex flex-col items-center gap-2'>
+                                <h3 className='text-title text-lg font-medium'>Focus + Memory Formula</h3>
+                                <p className='text-description'>
+                                    Enhance your concentration and retenttion during exams with our top-rated natural supplement
                                 </p>
+                                <div className='flex flex-col items-start gap-2 mt-2'>
+                                    <div className='flex items-center gap-2'>
+                                        <Pill className='h-4 w-4 text-description'/>
+                                        <span className='text-description text-sm'>Supports cognitive function</span>
+                                    </div>
+                                    <div className='flex items-center gap-2'>
+                                        <Leaf className='h-4 w-4 text-description'/>
+                                        <span className='text-description text-sm'>All-natural ingredients</span>
+                                    </div>
+                                    <div className='flex items-center gap-2'>
+                                        <Clock className='h-4 w-4 text-description'/>
+                                        <span className='text-description text-sm'>Reduce mental fatigue</span>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>

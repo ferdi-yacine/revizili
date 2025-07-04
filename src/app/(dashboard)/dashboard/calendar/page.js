@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { Button } from "@/app/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/app/components/ui/card"
 import { Calendar } from "@/app/components/ui/calendar"
@@ -20,9 +20,15 @@ import {
 } from "@/app/components/ui/dialog"
 import { Popover, PopoverContent, PopoverTrigger } from "@/app/components/ui/popover"
 import { CalendarIcon, Clock, Video, Plus, Users, CalendarPlus2Icon as CalendarIcon2 } from "lucide-react"
+import { useSession } from "next-auth/react"
+import { addDays, format } from "date-fns"
 
 const TutorCalendarPage = () => {
+  const { data: session } = useSession()
   const [date, setDate] = useState(new Date())
+  const [isLoading, setIsLoading] = useState(true)
+  const [upcomingSessions, setUpcomingSessions] = useState([])
+  const [allSessions, setAllSessions] = useState([])
   const [selectedTimeSlot, setSelectedTimeSlot] = useState(null)
   const [newSession, setNewSession] = useState({
     student: "",
@@ -33,6 +39,40 @@ const TutorCalendarPage = () => {
     notes: "",
     module: "",
   })
+
+  useEffect(() => {
+    const fetchSessions = async () => {
+      if (!session?.user?.id) return
+
+      try {
+        setIsLoading(true)
+        const today = new Date()
+        const nextWeek = addDays(today, 7)
+
+        const response = await fetch(
+          `/api/session?userId=${session.user.id}&role=tutor&startDate=${today.toISOString()}&endDate=${nextWeek.toISOString()}&status=accepted`
+        )
+        const data = await response.json()
+
+        if (response.ok) {
+          setAllSessions(data.sessions)
+          const formattedSessions = data.sessions.map(session => ({
+            ...session,
+            date: new Date(session.date)
+          }))
+          setUpcomingSessions(formattedSessions)
+        } else {
+          console.error('Error fetching sessions:', data.error)
+        }
+      } catch (error) {
+        console.error('Error fetching sessions:', error)
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    fetchSessions()
+  }, [session])
 
   // Sample data
   const [students] = useState([
@@ -125,6 +165,9 @@ const TutorCalendarPage = () => {
     return sessions.some((session) => session.date.toDateString() === date.toDateString())
   }
 
+  console.log(allSessions)
+  console.log(upcomingSessions)
+
   return (
     <div className="p-6">
       <div className="mb-8">
@@ -158,7 +201,7 @@ const TutorCalendarPage = () => {
 
               <div className="flex-1">
                 <div className="flex items-center justify-between mb-4">
-                  {/* <h3 className="text-lg font-medium">{date ? format(date, "EEEE, MMMM d, yyyy") : "Select a date"}</h3> */}
+                  <h3 className="text-lg font-medium">{date ? format(date, "EEEE, MMMM d, yyyy") : "Select a date"}</h3>
                   <h3 className="text-lg font-medium">{"Select a date"}</h3>
                   <Dialog>
                     <DialogTrigger asChild>
@@ -429,51 +472,64 @@ const TutorCalendarPage = () => {
             <CardDescription>Your scheduled tutoring sessions for the next 7 days</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {sessions.map((session) => (
-                <div key={session.id} className="border rounded-lg p-4">
-                  <div className="flex items-center space-x-3 mb-3">
-                    <Avatar className="h-10 w-10">
-                      <AvatarImage src={session.student.avatar || "/placeholder.svg"} alt={session.student.name} />
-                      <AvatarFallback>
-                        {session.student.name
-                          .split(" ")
-                          .map((n) => n[0])
-                          .join("")}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div>
-                      <h4 className="font-medium">{session.student.name}</h4>
-                      <p className="text-sm text-gray-600">{session.module}</p>
+            {upcomingSessions.length === 0 ? (
+              <div className="text-center py-8">
+                <CalendarIcon2 className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                <h3 className="text-lg font-medium text-gray-900 mb-2">No upcoming sessions</h3>
+                <p className="text-gray-600">You have no sessions scheduled for the next 7 days</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {upcomingSessions.map((session) => (
+                  <div key={session._id} className="border rounded-lg p-4">
+                    <div className="flex items-center space-x-3 mb-3">
+                      <Avatar className="h-10 w-10">
+                        <AvatarImage
+                          src={session.studentId?.avatar || "/placeholder.svg"}
+                          alt={session.studentId?.firstName}
+                        />
+                        <AvatarFallback>
+                          {session.studentId?.firstName
+                            ?.split(" ")
+                            .map((n) => n[0])
+                            .join("")}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div>
+                        <h4 className="font-medium">{session.studentId?.firstName} {session.studentId?.lastName}</h4>
+                        <p className="text-sm text-gray-600">{session.moduleId?.name}</p>
+                      </div>
                     </div>
+                    <div className="space-y-2 mb-3">
+                      <div className="flex items-center text-sm">
+                        <CalendarIcon className="h-4 w-4 mr-2 text-gray-500" />
+                        {format(new Date(session.date), "EEEE, MMMM d")}
+                      </div>
+                      <div className="flex items-center text-sm">
+                        <Clock className="h-4 w-4 mr-2 text-gray-500" />
+                        {session.startTime} - {session.endTime}
+                      </div>
+                    </div>
+                    {session.notes && (
+                      <p className="text-sm text-gray-700 mb-3 border-t pt-2">
+                        <span className="font-medium">Notes:</span> {session.notes}
+                      </p>
+                    )}
+                    {session.meetingLink && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="w-full flex items-center justify-center"
+                        onClick={() => handleJoinMeeting(session.meetingLink)}
+                      >
+                        <Video className="h-4 w-4 mr-2" />
+                        Join Meeting
+                      </Button>
+                    )}
                   </div>
-                  <div className="space-y-2 mb-3">
-                    <div className="flex items-center text-sm">
-                      <CalendarIcon className="h-4 w-4 mr-2 text-gray-500" />
-                      {/* {format(session.date, "EEEE, MMMM d")} */}
-                    </div>
-                    <div className="flex items-center text-sm">
-                      <Clock className="h-4 w-4 mr-2 text-gray-500" />
-                      {session.startTime} - {session.endTime}
-                    </div>
-                  </div>
-                  {session.notes && (
-                    <p className="text-sm text-gray-700 mb-3 border-t pt-2">
-                      <span className="font-medium">Notes:</span> {session.notes}
-                    </p>
-                  )}
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="w-full flex items-center justify-center"
-                    onClick={() => handleJoinMeeting(session.meetingLink)}
-                  >
-                    <Video className="h-4 w-4 mr-2" />
-                    Join Meeting
-                  </Button>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>

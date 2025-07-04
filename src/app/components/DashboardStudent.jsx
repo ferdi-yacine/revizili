@@ -1,40 +1,73 @@
 "use client"
 
-import { useState } from "react"
-
+import { useEffect, useState } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/app/components/ui/card"
 import { Input } from "@/app/components/ui/input"
 import { Label } from "@/app/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/app/components/ui/select"
 import { Badge } from "@/app/components/ui/badge"
-
 import { BookOpen, Calendar, Clock, Star, Search } from "lucide-react"
 import Link from "next/link"
 import { Avatar, AvatarFallback, AvatarImage } from "@/app/components/ui/avatar"
 import { Button } from "@/app/components/ui/button"
+import { useSession } from "next-auth/react"
+import { addDays } from "date-fns"
 
 const DashboardStudent = () => {
+  const { data: session } = useSession()
   const [searchModule, setSearchModule] = useState("")
   const [searchLevel, setSearchLevel] = useState("")
+  const [isLoading, setIsLoading] = useState(true)
+  const [upcomingSessions, setUpcomingSessions] = useState([])
 
-  const upcomingSessions = [
-    {
-      id: 1,
-      tutor: "Dr. Sarah Johnson",
-      subject: "Mathematics",
-      date: "2024-01-15",
-      time: "2:00 PM",
-      duration: "1 hour",
-    },
-    {
-      id: 2,
-      tutor: "Prof. Michael Chen",
-      subject: "Physics",
-      date: "2024-01-16",
-      time: "4:00 PM",
-      duration: "1.5 hours",
-    },
-  ]
+  useEffect(() => {
+    const fetchSessions = async () => {
+      if (!session?.user?.id) return
+
+      try {
+        setIsLoading(true)
+        const today = new Date()
+        const nextWeek = addDays(today, 7)
+
+        const response = await fetch(
+          `/api/session?userId=${session.user.id}&role=student&startDate=${today.toISOString()}&endDate=${nextWeek.toISOString()}&status=accepted`
+        )
+        const data = await response.json()
+
+        if (response.ok) {
+          setUpcomingSessions(data.sessions)
+        } else {
+          console.error('Error fetching sessions:', data.error)
+        }
+      } catch (error) {
+        console.error('Error fetching sessions:', error)
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    fetchSessions()
+  }, [session])
+
+
+  // const upcomingSessions = [
+  //   {
+  //     id: 1,
+  //     tutor: "Dr. Sarah Johnson",
+  //     subject: "Mathematics",
+  //     date: "2024-01-15",
+  //     time: "2:00 PM",
+  //     duration: "1 hour",
+  //   },
+  //   {
+  //     id: 2,
+  //     tutor: "Prof. Michael Chen",
+  //     subject: "Physics",
+  //     date: "2024-01-16",
+  //     time: "4:00 PM",
+  //     duration: "1.5 hours",
+  //   },
+  // ]
 
   const recentTutors = [
     {
@@ -58,6 +91,10 @@ const DashboardStudent = () => {
   const handleSearch = () => {
     console.log("Searching for:", { module: searchModule, level: searchLevel })
     // Navigate to search results
+  }
+
+  const calculateDuration = (startTime, endTime) => {
+    return `${endTime.split(':')[0] - startTime.split(':')[0]} hours`;
   }
 
   return (
@@ -190,15 +227,15 @@ const DashboardStudent = () => {
           <CardContent>
             <div className="space-y-4">
               {upcomingSessions.map((session) => (
-                <div key={session.id} className="flex items-center justify-between p-4 border rounded-lg">
+                <div key={session._id} className="flex items-center justify-between p-4 border rounded-lg">
                   <div>
-                    <h4 className="font-medium">{session.subject}</h4>
-                    <p className="text-sm text-gray-600">with {session.tutor}</p>
+                    <h4 className="font-medium">{session?.moduleId?.name}</h4>
+                    <p className="text-sm text-gray-600">with {session?.tutorId?.firstName} {session?.tutorId?.lastName}</p>
                     <p className="text-sm text-gray-500">
-                      {session.date} at {session.time}
+                      {new Date(session?.date).toLocaleDateString()} at {session?.startTime} - {session?.endTime}
                     </p>
                   </div>
-                  <Badge variant="outline">{session.duration}</Badge>
+                  <Badge variant="outline">{calculateDuration(session?.startTime, session?.endTime)}</Badge>
                 </div>
               ))}
             </div>

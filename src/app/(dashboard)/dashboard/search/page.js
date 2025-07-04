@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/app/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/app/components/ui/card"
 import { Input } from "@/app/components/ui/input"
@@ -8,84 +8,152 @@ import { Label } from "@/app/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/app/components/ui/select"
 import { Badge } from "@/app/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/app/components/ui/avatar"
-import { Search, Star, MapPin, Clock, DollarSign } from "lucide-react"
+import { Search, Star, MapPin, Clock } from "lucide-react"
+import { BookingModal } from "@/app/components/BookSession"
+import { useSession } from "next-auth/react"
 
 const FindTutorsPage = () => {
+  const { data: session } = useSession();
+  const [modules, setModules] = useState([])
+  const [loadingModules, setLoadingModules] = useState(true)
+  const [selectedYear, setSelectedYear] = useState('')
+  const [selectedSpecialty, setSelectedSpecialty] = useState('')
+  const [selectedModule, setSelectedModule] = useState('')
+
   const [searchFilters, setSearchFilters] = useState({
-    subject: "",
+    module: "",
     level: "",
-    priceRange: "",
-    availability: "",
   })
 
-  const [tutors] = useState([
-    {
-      id: 1,
-      name: "Dr. Sarah Johnson",
-      subjects: ["Mathematics", "Statistics"],
-      rating: 4.9,
-      reviewCount: 127,
-      hourlyRate: 45,
-      experience: "8 years",
-      location: "New York, NY",
-      avatar: "/placeholder.svg?height=60&width=60",
-      bio: "PhD in Mathematics with extensive experience in calculus, algebra, and statistics.",
-      availability: "Weekdays 2-8 PM",
-      languages: ["English", "Spanish"],
-    },
-    {
-      id: 2,
-      name: "Prof. Michael Chen",
-      subjects: ["Physics", "Engineering"],
-      rating: 4.8,
-      reviewCount: 89,
-      hourlyRate: 55,
-      experience: "12 years",
-      location: "San Francisco, CA",
-      avatar: "/placeholder.svg?height=60&width=60",
-      bio: "Professor of Physics specializing in quantum mechanics and thermodynamics.",
-      availability: "Evenings & Weekends",
-      languages: ["English", "Mandarin"],
-    },
-    {
-      id: 3,
-      name: "Dr. Emily Rodriguez",
-      subjects: ["Chemistry", "Biology"],
-      rating: 4.7,
-      reviewCount: 156,
-      hourlyRate: 40,
-      experience: "6 years",
-      location: "Austin, TX",
-      avatar: "/placeholder.svg?height=60&width=60",
-      bio: "Biochemistry expert with passion for organic chemistry and molecular biology.",
-      availability: "Flexible schedule",
-      languages: ["English", "Spanish"],
-    },
-    {
-      id: 4,
-      name: "James Wilson",
-      subjects: ["Computer Science", "Programming"],
-      rating: 4.9,
-      reviewCount: 203,
-      hourlyRate: 60,
-      experience: "10 years",
-      location: "Seattle, WA",
-      avatar: "/placeholder.svg?height=60&width=60",
-      bio: "Software engineer and CS educator specializing in Python, JavaScript, and algorithms.",
-      availability: "Weekends",
-      languages: ["English"],
-    },
-  ])
+  const [tutors, setTutors] = useState([])
 
-  const handleSearch = () => {
-    console.log("Searching with filters:", searchFilters)
-    // Implement search logic here
+  const yearOptions = [
+    { id: 'preparatoryYear1', label: '1st year', displayName: '1st Preparatory Year' },
+    { id: 'preparatoryYear2', label: '2nd year', displayName: '2nd Preparatory Year' },
+    { id: 'secondCycleYear1', label: '3rd year', displayName: '1st Year Second Cycle' },
+    { id: 'secondCycleYear2', label: '4th year', displayName: '2nd Year Second Cycle' },
+    { id: 'secondCycleYear3', label: '5th year', displayName: '3rd Year Second Cycle' },
+  ]
+
+  const specialtyOptions = {
+    secondCycleYear2: [
+      { id: 'financialMarket', name: 'Financial Market' },
+      { id: 'accountingAudit', name: 'Accounting Audit' },
+      { id: 'corporateFinance', name: 'Corporate Finance' },
+      { id: 'banksInsurance', name: 'Banks & Insurance' }
+    ],
+    secondCycleYear3: [
+      { id: 'financialMarket', name: 'Financial Market' },
+      { id: 'accountingAudit', name: 'Accounting Audit' },
+      { id: 'corporateFinance', name: 'Corporate Finance' },
+      { id: 'banksInsurance', name: 'Banks & Insurance' }
+    ]
   }
 
-  const handleBookTutor = (tutorId) => {
-    console.log("Booking tutor:", tutorId)
-    // Navigate to booking page or open booking modal
+  useEffect(() => {
+    const fetchModules = async () => {
+      try {
+        setLoadingModules(true)
+        const response = await fetch('/api/module')
+        const data = await response.json()
+        setModules(data.modules)
+      } catch (error) {
+        console.error('Error fetching modules:', error)
+      } finally {
+        setLoadingModules(false)
+      }
+    }
+
+    fetchModules()
+  }, [])
+
+  const getFilteredModules = () => {
+    if (loadingModules || !modules.length) return []
+
+    let filtered = modules
+    if (selectedYear) {
+      filtered = filtered.filter(module => module.academicLevel === selectedYear)
+    }
+    if (selectedSpecialty) {
+      filtered = filtered.filter(module => module.specialty === selectedSpecialty)
+    }
+    return filtered
   }
+
+  const handleYearChange = (yearId) => {
+    setSelectedYear(yearId)
+    setSelectedSpecialty('')
+    setSelectedModule('')
+  }
+
+  const handleSpecialtyChange = (specialtyId) => {
+    setSelectedSpecialty(specialtyId)
+    setSelectedModule('')
+  }
+
+  const handleModuleChange = (moduleId) => {
+    setSelectedModule(moduleId)
+    setSearchFilters(prev => ({
+      ...prev,
+      module: moduleId
+    }))
+  }
+
+  const handleSearch = async () => {
+    if (!selectedModule) {
+      alert("Please select a module first");
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/tutor/search?moduleId=${selectedModule}&level=${searchFilters.level}`);
+      const data = await response.json();
+
+      if (response.ok) {
+        setTutors(data.tutors);
+      } else {
+        console.error('Error searching tutors:', data.error);
+        alert('Failed to search tutors');
+      }
+    } catch (error) {
+      console.error('Error searching tutors:', error);
+      alert('Failed to search tutors');
+    }
+  };
+
+  const handleBookSession = async (bookingData) => {
+    try {
+      const response = await fetch('/api/session', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          studentId: session?.user.id,
+          tutorId: bookingData.tutorId,
+          moduleId: bookingData.moduleId,
+          date: bookingData.date,
+          startTime: bookingData.startTime,
+          endTime: bookingData.endTime,
+          meetingLink: bookingData.meetingLink,
+          notes: bookingData.notes
+        })
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to book session')
+      }
+
+      alert('Session booked successfully!')
+      // Optionally refresh data or redirect
+    } catch (error) {
+      console.error('Error booking session:', error)
+      alert(error.message || 'Failed to book session')
+    }
+  }
+
 
   return (
     <div className="p-6">
@@ -94,7 +162,6 @@ const FindTutorsPage = () => {
         <p className="text-gray-600">Search for qualified tutors based on your needs</p>
       </div>
 
-      {/* Search Form */}
       <Card className="mb-8">
         <CardHeader>
           <CardTitle className="flex items-center text-3xl">
@@ -102,22 +169,76 @@ const FindTutorsPage = () => {
             Search Filters
           </CardTitle>
         </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <CardContent className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="flex flex-col gap-2">
-              <Label htmlFor="subject">Subject</Label>
-              <Input
-                id="subject"
-                placeholder="e.g., Mathematics, Physics..."
-                value={searchFilters.subject}
-                onChange={(e) => setSearchFilters((prev) => ({ ...prev, subject: e.target.value }))}
-              />
+              <Label>Academic Year</Label>
+              <Select
+                value={selectedYear}
+                onValueChange={handleYearChange}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Select year" />
+                </SelectTrigger>
+                <SelectContent>
+                  {yearOptions.map((option) => (
+                    <SelectItem key={option.id} value={option.id}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
+
+            {(selectedYear === 'secondCycleYear2' || selectedYear === 'secondCycleYear3') && (
+              <div className="flex flex-col gap-2">
+                <Label>Specialty</Label>
+                <Select
+                  value={selectedSpecialty}
+                  onValueChange={handleSpecialtyChange}
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Select specialty" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {specialtyOptions[selectedYear].map((specialty) => (
+                      <SelectItem key={specialty.id} value={specialty.id}>
+                        {specialty.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+
+            <div className="flex flex-col gap-2">
+              <Label>Module</Label>
+              <Select
+                value={selectedModule}
+                onValueChange={handleModuleChange}
+                disabled={!selectedYear || (['secondCycleYear2', 'secondCycleYear3'].includes(selectedYear) && !selectedSpecialty)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder={loadingModules ? "Loading..." : "Select module"} />
+                </SelectTrigger>
+                <SelectContent>
+                  {getFilteredModules().map((module) => (
+                    <SelectItem key={module._id} value={module._id}>
+                      {module.name} ({module.sign})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          {/* Level Selector */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="flex flex-col gap-2">
               <Label htmlFor="level">Level</Label>
               <Select
                 value={searchFilters.level}
-                onValueChange={(value) => setSearchFilters((prev) => ({ ...prev, level: value }))}
+                onValueChange={(value) => setSearchFilters(prev => ({ ...prev, level: value }))}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select level" />
@@ -129,48 +250,15 @@ const FindTutorsPage = () => {
                 </SelectContent>
               </Select>
             </div>
-            <div className="flex flex-col gap-2">
-              <Label htmlFor="priceRange">Price Range</Label>
-              <Select
-                value={searchFilters.priceRange}
-                onValueChange={(value) => setSearchFilters((prev) => ({ ...prev, priceRange: value }))}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select range" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="0-30">$0 - $30/hour</SelectItem>
-                  <SelectItem value="30-50">$30 - $50/hour</SelectItem>
-                  <SelectItem value="50-80">$50 - $80/hour</SelectItem>
-                  <SelectItem value="80+">$80+/hour</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="flex flex-col gap-2">
-              <Label htmlFor="availability">Availability</Label>
-              <Select
-                value={searchFilters.availability}
-                onValueChange={(value) => setSearchFilters((prev) => ({ ...prev, availability: value }))}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select time" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="morning">Morning</SelectItem>
-                  <SelectItem value="afternoon">Afternoon</SelectItem>
-                  <SelectItem value="evening">Evening</SelectItem>
-                  <SelectItem value="weekend">Weekend</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
           </div>
-          <Button onClick={handleSearch} className="mt-4">
+
+          <Button onClick={handleSearch} className="mt-4" disabled={!selectedModule}>
             Search Tutors
           </Button>
         </CardContent>
       </Card>
 
-      {/* Results */}
+      {/* Results - remains the same */}
       <div className="space-y-6">
         <div className="flex justify-between items-center">
           <h2 className="text-xl font-semibold">Available Tutors ({tutors.length})</h2>
@@ -180,8 +268,6 @@ const FindTutorsPage = () => {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="rating">Sort by Rating</SelectItem>
-              <SelectItem value="price-low">Price: Low to High</SelectItem>
-              <SelectItem value="price-high">Price: High to Low</SelectItem>
               <SelectItem value="experience">Experience</SelectItem>
             </SelectContent>
           </Select>
@@ -190,35 +276,32 @@ const FindTutorsPage = () => {
         {tutors.map((tutor) => (
           <Card key={tutor.id}>
             <CardContent className="p-6">
-              <div className="flex flex-col lg:flex-row gap-6">
+              <div className="flex flex-col lg:flex-row justify-between gap-6">
                 <div className="flex items-start space-x-4">
                   <Avatar className="h-16 w-16">
-                    <AvatarImage src={tutor.avatar || "/placeholder.svg"} alt={tutor.name} />
+                    <AvatarImage src={tutor?.avatar || "/placeholder.svg"} alt={tutor?.firstName} />
                     <AvatarFallback>
-                      {tutor.name
-                        .split(" ")
-                        .map((n) => n[0])
-                        .join("")}
+                      {tutor?.firstName}
                     </AvatarFallback>
                   </Avatar>
                   <div className="flex-1">
-                    <h3 className="text-xl font-semibold mb-2">{tutor.name}</h3>
+                    <h3 className="text-xl font-semibold mb-2">{tutor?.firstName}</h3>
                     <div className="flex items-center space-x-4 mb-3">
                       <div className="flex items-center">
                         <Star className="h-4 w-4 text-yellow-400 fill-current" />
-                        <span className="ml-1 font-medium">{tutor.rating}</span>
-                        <span className="text-gray-500 ml-1">({tutor.reviewCount} reviews)</span>
+                        <span className="ml-1 font-medium">{tutor?.rating}</span>
+                        <span className="text-gray-500 ml-1">({tutor?.reviewCount} reviews)</span>
                       </div>
                       <div className="flex items-center text-gray-600">
                         <MapPin className="h-4 w-4 mr-1" />
-                        {tutor.location}
+                        Constantine
                       </div>
                     </div>
-                    <p className="text-gray-700 mb-3">{tutor.bio}</p>
+                    <p className="text-gray-700 mb-3">{tutor?.bio}</p>
                     <div className="flex flex-wrap gap-2 mb-3">
-                      {tutor.subjects.map((subject) => (
-                        <Badge key={subject} variant="secondary">
-                          {subject}
+                      {tutor?.modules.map((module) => (
+                        <Badge key={module} variant="secondary">
+                          {module}
                         </Badge>
                       ))}
                     </div>
@@ -226,32 +309,29 @@ const FindTutorsPage = () => {
                 </div>
 
                 <div className="lg:w-64 space-y-4">
-                  <div className="text-center lg:text-right">
-                    <div className="flex items-center justify-center lg:justify-end">
-                      <DollarSign className="h-5 w-5 text-green-600" />
-                      <span className="text-2xl font-bold text-green-600">{tutor.hourlyRate}</span>
-                      <span className="text-gray-600">/hour</span>
-                    </div>
-                  </div>
-
                   <div className="space-y-2 text-sm">
                     <div className="flex items-center">
                       <Clock className="h-4 w-4 mr-2 text-gray-500" />
-                      <span>{tutor.availability}</span>
+                      <span>{tutor?.availability}</span>
                     </div>
                     <div>
                       <span className="font-medium">Experience: </span>
-                      {tutor.experience}
+                      {tutor?.experience}
                     </div>
                     <div>
                       <span className="font-medium">Languages: </span>
-                      {tutor.languages.join(", ")}
+                      {tutor?.languages.join(", ")}
                     </div>
                   </div>
 
-                  <Button onClick={() => handleBookTutor(tutor.id)} className="w-full">
+                  {/* <Button onClick={() => handleBookTutor(tutor.id)} className="w-full">
                     Book Session
-                  </Button>
+                  </Button> */}
+                  <BookingModal
+                    tutor={tutor}
+                    module={{ id: selectedModule, name: modules.find(m => m._id === selectedModule)?.name }}
+                    onBookSession={handleBookSession}
+                  />
                 </div>
               </div>
             </CardContent>

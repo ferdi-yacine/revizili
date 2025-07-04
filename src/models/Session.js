@@ -17,20 +17,20 @@ const sessionSchema = new mongoose.Schema({
     required: true
   },
   startTime: {
-    type: Date,
+    type: String,
     required: true
   },
   endTime: {
-    type: Date,
+    type: String,
     required: true
   },
-  duration: {
-    type: Number,
+  date: {
+    type: Date,
     required: true
   },
   status: {
     type: String,
-    enum: ['scheduled', 'completed', 'cancelled', 'no_show'],
+    enum: ['scheduled', 'completed', 'accepted', 'cancelled', 'no_show'],
     default: 'scheduled'
   },
   meetingLink: {
@@ -39,16 +39,12 @@ const sessionSchema = new mongoose.Schema({
   notes: {
     type: String
   },
-  cost: {
-    type: Number,
-    required: true
-  },
   paymentStatus: {
     type: String,
     enum: ['pending', 'paid', 'refunded', 'failed'],
     default: 'pending'
   },
-  cancellationReason: {
+  responseMessage: {
     type: String
   }
 }, { timestamps: true });
